@@ -14,6 +14,8 @@ Esta aplicación está diseñada para gestionar servicios de reparaciones. Permi
    - Accediendo a la ruta `/usuarios/` se despliega un CRUD completo para la gestión de usuarios.
    - **Columna "Activo":**
      - Cada usuario tiene un indicador de estado en la columna "Activo". Al hacer clic sobre este indicador, el estado cambia entre "Activo" e "Inactivo".
+   - **Aclaración!!**
+      - Primero se deberia subir Roles para que suba bien los usuarios
 
 3. **Gestión de Roles:**
    - Desde el módulo "Roles", los administradores pueden:
