@@ -1,0 +1,243 @@
+{% extends 'app_usuario/base.html' %} 
+
+{% block blockTitle %}Gestión de Usuarios{% endblock blockTitle %}
+
+{% block content %}
+<div class="container-fluid px-4 py-5">
+    <div class="row mb-4 align-items-center">
+        <div class="col-12 col-md-6">
+            <h2 class="display-6 text-salmon">
+                <i class="bi bi-people-fill me-2"></i>Gestión de Usuarios
+            </h2>
+        </div>
+        <div class="col-12 col-md-6 text-md-end">
+            <a href="{% url 'app_usuario:create_user' %}" class="btn btn-salmon btn-lg shadow-sm">
+                <i class="bi bi-plus-circle me-2"></i>Crear Nuevo Usuario
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-salmon">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-salmon">
+                    <thead>
+                        <tr>
+                            <th class="text-center">Nombre</th>
+                            <th class="text-center">Email</th>
+                            <th class="text-center">Teléfono</th>
+                            <th class="text-center">Empresa</th>
+                            <th class="text-center">Dirección</th>
+                            <th class="text-center">Rol</th>
+                            <th class="text-center">Activo</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in usuarios %}
+                        <tr 
+                            class="align-middle 
+                            {% if usuario.rol.nombre == 'Administrador' %}table-danger 
+                            {% elif usuario.rol.nombre == 'Taller' %}table-warning 
+                            {% elif usuario.rol.nombre == 'Cliente' %}table-primary{% endif %}">
+                            <td class="text-center">{{ usuario.nombre }} {{ usuario.apellido }}</td>
+                            <td class="text-center">{{ usuario.email }}</td>
+                            <td class="text-center">{{ usuario.telefono }}</td>
+                            <td class="text-center">{{ usuario.empresa }}</td>
+                            <td class="text-center">{{ usuario.direccion }}</td>
+                            <td class="text-center">{{ usuario.rol }}</td>
+                            <td class="text-center">
+                                <button 
+                                    class="btn btn-sm toggle-status {% if usuario.activo %}btn-success{% else %}btn-danger{% endif %}"
+                                    data-user-id="{{ usuario.id }}"
+                                    data-status="{{ usuario.activo }}"
+                                    title="Cambiar Estado">
+                                    {% if usuario.activo %}ACTIVO{% else %}INACTIVO{% endif %}
+                                </button>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <a href="#" 
+                                        class="btn btn-sm btn-outline-salmon view-user-details" 
+                                        title="Ver Detalles"
+                                        data-user-id="{{ usuario.id }}"
+                                        data-user-name="{{ usuario.nombre }} {{ usuario.apellido }}"
+                                        data-user-email="{{ usuario.email }}"
+                                        data-user-phone="{{ usuario.telefono }}"
+                                        data-user-company="{{ usuario.empresa }}"
+                                        data-user-address="{{ usuario.direccion }}"
+                                        data-user-role="{{ usuario.rol }}"
+                                        data-user-status="{% if usuario.activo %}ACTIVO{% else %}INACTIVO{% endif %}">
+                                        <i class="bi bi-eye"></i>
+                                        </a>
+                                    <a href="{% url 'app_usuario:update_user' id=usuario.id %}" class="btn btn-sm btn-outline-salmon" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-salmon delete-usuario" 
+                                            title="Eliminar" 
+                                            data-user-id="{{ usuario.id }}"
+                                            data-user-url="{% url 'app_usuario:delete_user' usuario.id %}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="bi bi-info-circle me-2"></i>No hay usuarios registrados
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Está seguro de que desea eliminar este usuario?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="userDetailsModal" tabindex="-1" aria-labelledby="userDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userDetailsModalLabel">Detalles del Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Nombre:</strong> <span id="userName"></span></p>
+                <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                <p><strong>Teléfono:</strong> <span id="userPhone"></span></p>
+                <p><strong>Empresa:</strong> <span id="userCompany"></span></p>
+                <p><strong>Dirección:</strong> <span id="userAddress"></span></p>
+                <p><strong>Rol:</strong> <span id="userRole"></span></p>
+                <p><strong>Estado:</strong> <span id="userStatus"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let userToDelete = null;
+        let userDeleteUrl = null;
+        const confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+
+        document.querySelectorAll('.delete-usuario').forEach(button => {
+            button.addEventListener('click', function() {
+                userToDelete = this.getAttribute('data-user-id');
+                userDeleteUrl = this.getAttribute('data-user-url');
+                confirmDeleteModal.show();
+            });
+        });
+    
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (userDeleteUrl) {
+                fetch(userDeleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        const rowToRemove = document.querySelector(`button[data-user-id="${userToDelete}"]`).closest('tr');
+                        rowToRemove.remove();
+                        confirmDeleteModal.hide();
+                    } else {
+                        alert('No se pudo eliminar el usuario');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ocurrió un error al eliminar el usuario');
+                });
+            }
+        });
+    });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const buttons = document.querySelectorAll(".toggle-status");
+            buttons.forEach(button => {
+                button.addEventListener("click", function() {
+                    const userId = this.dataset.userId;
+                    const currentStatus = this.dataset.status === "true";
+    
+                    fetch("{% url 'app_usuario:toggle_user_status' %}", {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": "{{ csrf_token }}",
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        },
+                        body: `user_id=${userId}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const newStatus = data.new_status;
+                            this.classList.toggle("btn-success", newStatus);
+                            this.classList.toggle("btn-danger", !newStatus);
+                            this.textContent = newStatus ? "ACTIVO" : "INACTIVO";
+                            this.dataset.status = newStatus;
+                        } else {
+                            alert("Error: " + data.error);
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
+                });
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const userDetailsModal = new bootstrap.Modal(document.getElementById("userDetailsModal"));
+            
+            document.querySelectorAll(".view-user-details").forEach(button => {
+                button.addEventListener("click", function() {
+                    const userName = this.getAttribute("data-user-name");
+                    const userEmail = this.getAttribute("data-user-email");
+                    const userPhone = this.getAttribute("data-user-phone");
+                    const userCompany = this.getAttribute("data-user-company");
+                    const userAddress = this.getAttribute("data-user-address");
+                    const userRole = this.getAttribute("data-user-role");
+                    const userStatus = this.getAttribute("data-user-status");
+    
+                    document.getElementById("userName").textContent = userName;
+                    document.getElementById("userEmail").textContent = userEmail;
+                    document.getElementById("userPhone").textContent = userPhone;
+                    document.getElementById("userCompany").textContent = userCompany;
+                    document.getElementById("userAddress").textContent = userAddress;
+                    document.getElementById("userRole").textContent = userRole;
+                    document.getElementById("userStatus").textContent = userStatus;
+    
+                    userDetailsModal.show();
+                });
+            });
+        });
+    </script>
+{% endblock scripts %}

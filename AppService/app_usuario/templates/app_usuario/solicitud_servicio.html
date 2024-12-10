@@ -1,0 +1,215 @@
+{% extends 'app_usuario/base.html' %} 
+
+{% block content %}
+<div class="container-fluid px-4 py-5">
+    <div class="row mb-4 align-items-center">
+        <div class="col-12 col-md-6">
+            <h2 class="display-6 text-salmon">
+                <i class="bi bi-wrench me-2"></i>Solicitud de Servicio
+            </h2>
+        </div>
+        <div class="col-12 col-md-6 text-md-end">
+            <a href="{% url 'app_usuario:create_solicitud' %}" class="btn btn-salmon btn-lg shadow-sm">
+                <i class="bi bi-plus-circle me-2"></i>Crear Nueva Solicitud
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <form method="GET" class="d-flex align-items-center">
+                <input type="text" name="q" class="form-control me-2" placeholder="Buscar por título o descripción" 
+                       value="{{ request.GET.q }}">
+                
+                <input type="date" name="fecha" class="form-control me-2" 
+                       value="{{ request.GET.fecha }}"
+                       placeholder="Fecha de solicitud">
+                
+                <button type="submit" class="btn btn-salmon">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+                
+                <!-- Botón para limpiar búsqueda -->
+                <a href="{% url 'app_usuario:index_solicitud' %}" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mensaje de resultados de búsqueda -->
+    {% if request.GET.q or request.GET.fecha %}
+    <div class="alert alert-info mb-3">
+        Resultados de búsqueda 
+        {% if request.GET.q %}
+            para "{{ request.GET.q }}"
+        {% endif %}
+        {% if request.GET.fecha %}
+            {% if request.GET.q %} y {% endif %}
+            de fecha {{ request.GET.fecha }}
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div class="card shadow-sm border-salmon">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-salmon">
+                    <thead>
+                        <tr>
+                            <th class="text-center">Usuario</th>
+                            <th class="text-center">Título</th>
+                            <th class="text-center">Descripción</th>
+                            <th class="text-center">Fecha de Solicitud</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for solicitud in solicitudes %}
+                        <tr class="align-middle">
+                            <td class="text-center">{{ solicitud.usuario.nombre }}</td>
+                            <td class="text-center">{{ solicitud.nombre }}</td>
+                            <td class="text-center">{{ solicitud.descripcion|slice:":50" }}...</td>
+                            <td class="text-center">{{ solicitud.fecha_solicitud }}</td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <a href="#" 
+                                        class="btn btn-sm btn-outline-salmon view-sol-details" 
+                                        title="Ver Detalles"
+                                        data-sol-id="{{ solicitud.id }}"
+                                        data-sol-usuario="{{ solicitud.usuario }}"
+                                        data-sol-nombre="{{ solicitud.nombre }}"
+                                        data-sol-descripcion="{{ solicitud.descripcion}}"
+                                        data-sol-fecha="{{ solicitud.fecha_solicitud }}">
+                                        <i class="bi bi-eye"></i>
+                                        </a>
+                                    <a href="{% url 'app_usuario:update_solicitud' id=solicitud.id %}" class="btn btn-sm btn-outline-salmon" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-salmon delete-solicitud" 
+                                            title="Eliminar" 
+                                            data-solicitud-id="{{ solicitud.id }}"
+                                            data-solicitud-url="{% url 'app_usuario:delete_solicitud' solicitud.id %}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="bi bi-info-circle me-2"></i>No hay solicitudes registradas
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Está seguro de que desea eliminar la solicitud?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="solDetailsModal" tabindex="-1" aria-labelledby="solDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="solDetailsModalLabel">Detalles de la solicitud</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Usuario:</strong> <span id="solUsuario"></span></p>
+                <p><strong>Nombre:</strong> <span id="solNombre"></span></p>
+                <p><strong>Descripción:</strong> <span id="solDescripcion"></span></p>
+                <p><strong>Fecha de solicitud:</strong> <span id="solFecha"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let solicitudToDelete = null;
+        let solicitudDeleteUrl = null;
+        const confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+
+        document.querySelectorAll('.delete-solicitud').forEach(button => {
+            button.addEventListener('click', function() {
+                solicitudToDelete = this.getAttribute('data-solicitud-id');
+                solicitudDeleteUrl = this.getAttribute('data-solicitud-url');
+                confirmDeleteModal.show();
+            });
+        });
+    
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (solicitudDeleteUrl) {
+                fetch(solicitudDeleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        const rowToRemove = document.querySelector(`button[data-solicitud-id="${solicitudToDelete}"]`).closest('tr');
+                        rowToRemove.remove();
+                        confirmDeleteModal.hide();
+                    } else {
+                        alert('No se pudo eliminar la solicitud');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ocurrió un error al eliminar la solicitud');
+                });
+            }
+        });
+    });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const solDetailsModal = new bootstrap.Modal(document.getElementById("solDetailsModal"));
+            
+            document.querySelectorAll(".view-sol-details").forEach(button => {
+                button.addEventListener("click", function() {
+                    const solUsuario = this.getAttribute("data-sol-usuario");
+                    const solNombre = this.getAttribute("data-sol-nombre");
+                    const solDescripcion = this.getAttribute("data-sol-descripcion");
+                    const solFecha = this.getAttribute("data-sol-fecha");
+                    
+    
+                    document.getElementById("solUsuario").textContent = solUsuario;
+                    document.getElementById("solNombre").textContent = solNombre;
+                    document.getElementById("solDescripcion").textContent = solDescripcion;
+                    document.getElementById("solFecha").textContent = solFecha;
+    
+                    solDetailsModal.show();
+                });
+            });
+        });
+    </script>
+{% endblock scripts %}

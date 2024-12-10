@@ -1,0 +1,40 @@
+# Sistema operativo
+*.DS_Store
+*.swp
+Thumbs.db
+
+# Entorno virtual
+venv/
+env/
+ENV/
+.vscode/
+.idea/
+
+# Archivos de Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.sqlite3
+
+# Archivos de configuración y secretos
+*.env
+config/settings_local.py
+
+# Archivos de log
+*.log
+logs/
+
+# Archivos de migraciones que podrían no ser necesarios
+migrations/**/.*
+
+# Archivos estáticos y de medios
+staticfiles/
+media/
+
+# Archivos de dependencias generados
+Pipfile
+Pipfile.lock
+
+# Otros
+node_modules/
